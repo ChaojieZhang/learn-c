@@ -9,36 +9,50 @@ struct film {
 };
 
 struct film_list {
-    struct film movie;
+    struct film * movie;
     struct film_list * next;
 };
 
-int getFilm(struct film);
+int getFilm(struct film *);
+void printList(struct film_list *);
 
 int main(void){
     puts("This program record film in list");
-    struct film_list current;
+    struct film_list * current;
+    struct film_list head;
+    current = & head;
     do {
         struct film movie;
-        getFilm(movie);
-        current.movie = movie;
         struct film_list next; 
-        current.next = &next;
-        current = *current.next;
-        printf("film.title: %s, film.rate: %d\n", movie.title, movie.rate);
-        puts("continue?(y/n)");
-        char ch;
-        if((ch = getchar()) == 'n'){
+        getFilm(&movie);
+        current->movie = &movie;
+        puts("Enter done to stop or any other key to continue");
+        char directive[5];
+        fgets(directive, 5, stdin);
+        if(strcmp(directive, "done") == 0){
+            current->next = NULL;
+            printList(&head);
             break;
+        } else {
+            current->next = &next;
         }
     } while(1);
     return 0;
 }
 
-int getFilm(struct film movie){
+int getFilm(struct film * movie){
     puts("Please input film name:");
-    scanf("%s", movie.title);
+    fgets(movie->title, TITLE_LENGTH, stdin);
     puts("Please input rate of the film:");
-    scanf("%d", &movie.rate);
+    scanf("%d", &movie->rate);
+    getchar();
     return 1;
+}
+
+void printList(struct film_list * fl){
+    printf("tile \t rate");
+    while(fl->next != NULL){
+        printf("%s \t %d", fl->movie->title, fl->movie->rate);
+    }
+    printf("\n");
 }
