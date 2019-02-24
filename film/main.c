@@ -20,12 +20,12 @@ int main(void){
     puts("This program record film in list");
     struct film_list * current;
     struct film_list head;
-    current = & head;
+    current = &head;
     do {
-        struct film movie;
-        struct film_list next; 
-        getFilm(&movie);
-        current->movie = &movie;
+        struct film * movie = (struct film *)malloc(sizeof(struct film));
+        struct film_list * next= (struct film_list *)malloc(sizeof(struct film_list));
+        getFilm(movie);
+        current->movie = movie;
         puts("Enter done to stop or any other key to continue");
         char directive[5];
         fgets(directive, 5, stdin);
@@ -34,7 +34,8 @@ int main(void){
             printList(&head);
             break;
         } else {
-            current->next = &next;
+            current->next = next;
+            current = next;
         }
     } while(1);
     return 0;
@@ -50,9 +51,11 @@ int getFilm(struct film * movie){
 }
 
 void printList(struct film_list * fl){
-    printf("tile \t rate");
-    while(fl->next != NULL){
-        printf("%s \t %d", fl->movie->title, fl->movie->rate);
+    struct film_list * current = fl;
+    printf("tile \t rate\n");
+    while(current != NULL){
+        printf("%s \t %d\n", current->movie->title, current->movie->rate);
+        current = current->next;
     }
     printf("\n");
 }
