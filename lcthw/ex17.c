@@ -4,9 +4,6 @@
 #include <errno.h>
 #include <string.h>
 
-#define MAX_DATA 512
-#define MAX_ROWS 100
-
 void die(const char *message){
     if(errno){
         perror(message);
@@ -20,12 +17,14 @@ void die(const char *message){
 struct Address{
     int id;
     int set;
-    char name[MAX_DATA];
-    char email[MAX_DATA];
+    char *name;
+    char *email;
 };
 
 struct Database{
-    struct Address rows[MAX_ROWS];
+    struct Address *rows;
+    int MAX_ROWS;
+    int MAX_DATA;
 };
 
 struct Connection{
@@ -97,11 +96,21 @@ void Database_write(struct Connection *conn){
     }
 }
 
-void Database_create(struct Connection *conn){
+void Database_create(struct Connection *conn, int max_data, int max_rows){
+    conn->db->MAX_DATA = max_data;
+    conn->db->MAX_ROWS = max_rows;
+
+    conn->db->rows = malloc(conn->db->MAX_ROWS * sizeof(struct Address));
     int i = 0;
 
-    for(i = 0; i < MAX_ROWS; i++){
-        struct Address addr = {.id = i, .set = 0};
+
+    for(i = 0; i < conn->db->MAX_ROWS; i++){
+        struct Address addr = {
+            .id = i,
+            .set = 0,
+            .name = malloc(conn->db->MAX_DATA * sizeof(char)),
+            .email = malloc(conn->db->MAX_DATA * sizeof(char))
+        };
         conn->db->rows[i] = addr;
     }
 }
@@ -113,11 +122,11 @@ void Database_set(struct Connection *conn, int id, const char *name, const char 
     }
 
     addr->set = 1;
-    char *res = strncpy(addr->name, name, MAX_DATA);
+    char *res = strncpy(addr->name, name, conn->db->MAX_DATA);
     if(!res){
         die("Name copy failed");
     }
-    res = strncpy(addr->email, email, MAX_DATA);
+    res = strncpy(addr->email, email, conn->db->MAX_DATA);
     if(!res){
         die("Emial copy failed");
     }
@@ -141,7 +150,7 @@ void Database_list(struct Connection *conn){
     int i = 0;
     struct Database *db = conn->db;
 
-    for(i = 0; i < MAX_ROWS; i++){
+    for(i = 0; i < conn->db->MAX_ROWS; i++){
         struct Address *cur = &db->rows[i];
         if(cur->set){
             Address_print(cur);
@@ -153,7 +162,10 @@ int main(int argc, char *argv[]){
     if(argc < 3){
         die("USAGE: ex17 <dbfile> <action> [action params]");
     }
-    
+
+    int max_data = 512;
+    int max_rows = 512;
+
     char *filename = argv[1];
     char action = argv[2][0];
     struct Connection *conn = Database_open(filename, action);
@@ -161,15 +173,15 @@ int main(int argc, char *argv[]){
     
     if(argc > 3){
         id = atoi(argv[3]);
+        if(id > conn->db->MAX_ROWS){
+            die("There is not that many records.");
+        }
     }
-
-    if(id > MAX_ROWS){
-        die("There is not that many records.");
-    }
+    
 
     switch(action){
         case 'c':
-            Database_create(conn);
+            Database_create(conn, max_data, max_rows);
             Database_write(conn);
             break;
         case 'g':
